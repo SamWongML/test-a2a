@@ -1,0 +1,27 @@
+{
+  "name": "knowledge-agent",
+  "version": "1.0.0",
+  "description": "Persistent memory and RAG for the multi-agent system",
+  "url": "http://knowledge:8003",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false
+  },
+  "skills": [
+    {
+      "id": "store-knowledge",
+      "name": "Store Knowledge",
+      "description": "Store research findings and explanations for future retrieval"
+    },
+    {
+      "id": "search-knowledge",
+      "name": "Search Knowledge",
+      "description": "Semantic search for relevant past information"
+    },
+    {
+      "id": "get-context",
+      "name": "Get Context",
+      "description": "Get conversation context and history"
+    }
+  ]
+}

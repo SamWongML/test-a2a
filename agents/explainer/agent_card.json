@@ -1,0 +1,22 @@
+{
+  "name": "explainer-agent",
+  "version": "1.0.0",
+  "description": "Explains technologies with detailed code snippets using Context7 documentation",
+  "url": "http://explainer:8002",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false
+  },
+  "skills": [
+    {
+      "id": "explain-technology",
+      "name": "Explain Technology",
+      "description": "Provide detailed explanations of AI/ML technologies with examples"
+    },
+    {
+      "id": "code-snippets",
+      "name": "Code Snippets",
+      "description": "Generate practical, runnable code examples"
+    }
+  ]
+}

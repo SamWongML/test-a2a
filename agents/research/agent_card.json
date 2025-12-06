@@ -1,0 +1,22 @@
+{
+  "name": "research-agent",
+  "version": "1.0.0",
+  "description": "Researches AI projects using Firecrawl web search and GitHub API",
+  "url": "http://research:8001",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false
+  },
+  "skills": [
+    {
+      "id": "research-ai-projects",
+      "name": "Research AI Projects",
+      "description": "Comprehensive research on AI projects using web and GitHub sources"
+    },
+    {
+      "id": "github-search",
+      "name": "GitHub Search",
+      "description": "Find and analyze GitHub repositories by topic"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "orchestrator-agent",
+  "version": "1.0.0",
+  "description": "Main orchestrator for multi-agent AI system - routes queries and synthesizes responses",
+  "url": "http://orchestrator:8000",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": false
+  },
+  "skills": [
+    {
+      "id": "route-query",
+      "name": "Route Query",
+      "description": "Analyzes user queries and routes to appropriate specialist agents"
+    },
+    {
+      "id": "synthesize-response",
+      "name": "Synthesize Response",
+      "description": "Combines responses from multiple agents into a coherent final answer"
+    }
+  ]
+}
