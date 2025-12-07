@@ -1,6 +1,5 @@
 """A2A protocol utilities for all agents."""
 
-import json
 from typing import Any
 
 import httpx

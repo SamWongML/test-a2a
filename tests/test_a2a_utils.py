@@ -1,10 +1,7 @@
 """Tests for A2A utilities."""
 
-import pytest
 
 from shared.a2a_utils import (
-    AgentCard,
-    AgentSkill,
     create_a2a_error,
     create_a2a_response,
     create_agent_card,

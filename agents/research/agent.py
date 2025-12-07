@@ -1,8 +1,8 @@
 """CrewAI-based Research Agent for AI project discovery."""
 
-import google.generativeai as genai
 from crewai import Agent, Crew, Process, Task
-from crewai.flow.flow import Flow, listen, start
+
+from shared.models import ModelFactory
 
 from .config import get_settings
 from .tools import FirecrawlSearchTool, GitHubSearchTool
@@ -15,13 +15,15 @@ class ResearchAgent:
 
     def __init__(self):
         self.settings = get_settings()
-        genai.configure(api_key=self.settings.google_api_key)
 
         # Initialize tools
         self.firecrawl_search = FirecrawlSearchTool(api_key=self.settings.firecrawl_api_key)
         self.firecrawl_scrape = FirecrawlScrapeTool(api_key=self.settings.firecrawl_api_key)
         self.github_search = GitHubSearchTool(token=self.settings.github_token)
         self.github_details = GitHubRepoDetailsTool(token=self.settings.github_token)
+
+        # Create provider-agnostic LLM for CrewAI
+        self.llm = ModelFactory.create_crewai_llm(self.settings)
 
         # Create the crew
         self.crew = self._create_crew()
@@ -38,7 +40,7 @@ class ResearchAgent:
             about AI frameworks, tools, and projects.""",
             tools=[self.firecrawl_search, self.firecrawl_scrape],
             verbose=True,
-            llm=f"gemini/{self.settings.gemini_model}",
+            llm=self.llm,
         )
 
         # GitHub Research Agent
@@ -50,7 +52,7 @@ class ResearchAgent:
             the most promising and popular projects.""",
             tools=[self.github_search, self.github_details],
             verbose=True,
-            llm=f"gemini/{self.settings.gemini_model}",
+            llm=self.llm,
         )
 
         # Research Synthesizer Agent
@@ -61,7 +63,7 @@ class ResearchAgent:
             You combine findings from web research and GitHub analysis to provide
             comprehensive, actionable insights about AI projects and trends.""",
             verbose=True,
-            llm=f"gemini/{self.settings.gemini_model}",
+            llm=self.llm,
         )
 
         return Crew(

@@ -1,6 +1,5 @@
 """LangGraph-based orchestrator agent."""
 
-import asyncio
 import sys
 from typing import Literal, TypedDict
 
@@ -32,14 +31,8 @@ class OrchestratorAgent:
 
     def __init__(self):
         self.settings = get_settings()
-        self.router = QueryRouter(
-            api_key=self.settings.google_api_key,
-            model=self.settings.gemini_model,
-        )
-        self.synthesizer = ResponseSynthesizer(
-            api_key=self.settings.google_api_key,
-            model=self.settings.gemini_model,
-        )
+        self.router = QueryRouter(settings=self.settings)
+        self.synthesizer = ResponseSynthesizer(settings=self.settings)
         self.graph = self._build_graph()
 
     def _build_graph(self) -> StateGraph:
@@ -122,7 +115,7 @@ class OrchestratorAgent:
                     "agent_responses": state["agent_responses"]
                     + [AgentResponse(agent_name="knowledge", content=content)],
                 }
-        except Exception as e:
+        except Exception:
             # Knowledge check failed, continue with other agents
             return {"knowledge_result": None}
 

@@ -25,7 +25,7 @@ class SessionMemory:
 
         filepath = self._get_session_file(session_id)
         if os.path.exists(filepath):
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 self._sessions[session_id] = json.load(f)
         else:
             self._sessions[session_id] = []

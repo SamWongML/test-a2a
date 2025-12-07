@@ -1,7 +1,8 @@
 """Agno-based Knowledge Manager Agent."""
 
 from agno.agent import Agent
-from agno.models.google import Gemini
+
+from shared.models import ModelFactory
 
 from .config import get_settings
 from .knowledge_base import KnowledgeBase
@@ -43,9 +44,10 @@ class KnowledgeAgent:
         # Initialize session memory
         self.memory = SessionMemory()
 
-        # Create Agno agent
+        # Create Agno agent with provider-agnostic model
+        model = ModelFactory.create_agno_model(self.settings)
         self.agent = Agent(
-            model=Gemini(id=self.settings.gemini_model, api_key=self.settings.google_api_key),
+            model=model,
             description="Knowledge Manager for multi-agent system",
             instructions=KNOWLEDGE_SYSTEM_PROMPT,
             markdown=True,

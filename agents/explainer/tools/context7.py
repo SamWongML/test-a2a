@@ -1,7 +1,6 @@
 """Context7 MCP tool for retrieving up-to-date documentation."""
 
 import httpx
-from pydantic import BaseModel
 
 
 class Context7Tool:

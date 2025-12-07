@@ -9,7 +9,19 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      # Model provider selection (gemini or azure_openai)
+      - MODEL_PROVIDER=${MODEL_PROVIDER:-gemini}
+      # Gemini settings
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GEMINI_MODEL=${ORCHESTRATOR_GEMINI_MODEL:-gemini-2.0-flash}
+      # Azure OpenAI settings (with Entra ID auth)
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      - AZURE_OPENAI_DEPLOYMENT=${ORCHESTRATOR_AZURE_DEPLOYMENT:-}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-2024-02-15-preview}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID:-}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
+      # Agent URLs
       - RESEARCH_AGENT_URL=http://research:8001
       - EXPLAINER_AGENT_URL=http://explainer:8002
       - KNOWLEDGE_AGENT_URL=http://knowledge:8003
@@ -38,7 +50,15 @@ services:
     ports:
       - "8001:8001"
     environment:
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - MODEL_PROVIDER=${MODEL_PROVIDER:-gemini}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GEMINI_MODEL=${RESEARCH_GEMINI_MODEL:-gemini-2.0-flash}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      - AZURE_OPENAI_DEPLOYMENT=${RESEARCH_AZURE_DEPLOYMENT:-}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-2024-02-15-preview}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID:-}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
       - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - KNOWLEDGE_AGENT_URL=http://knowledge:8003
@@ -63,7 +83,15 @@ services:
     ports:
       - "8002:8002"
     environment:
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - MODEL_PROVIDER=${MODEL_PROVIDER:-gemini}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GEMINI_MODEL=${EXPLAINER_GEMINI_MODEL:-gemini-2.0-flash}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      - AZURE_OPENAI_DEPLOYMENT=${EXPLAINER_AZURE_DEPLOYMENT:-}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-2024-02-15-preview}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID:-}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
       - CONTEXT7_API_KEY=${CONTEXT7_API_KEY}
       - KNOWLEDGE_AGENT_URL=http://knowledge:8003
     depends_on:
@@ -87,7 +115,15 @@ services:
     ports:
       - "8003:8003"
     environment:
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - MODEL_PROVIDER=${MODEL_PROVIDER:-gemini}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GEMINI_MODEL=${KNOWLEDGE_GEMINI_MODEL:-gemini-2.0-flash}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      - AZURE_OPENAI_DEPLOYMENT=${KNOWLEDGE_AZURE_DEPLOYMENT:-}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-2024-02-15-preview}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID:-}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
     volumes:
       - knowledge_data:/app/data
     healthcheck:

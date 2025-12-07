@@ -47,8 +47,14 @@ knowledge = [
     "lancedb>=0.15.0",
 ]
 
+azure = [
+    "openai>=1.0.0",
+    "azure-identity>=1.15.0",
+    "langchain-openai>=0.2.0",
+]
+
 all = [
-    "multi-agent-a2a[orchestrator,research,explainer,knowledge,dev]",
+    "multi-agent-a2a[orchestrator,research,explainer,knowledge,azure,dev]",
 ]
 
 [build-system]

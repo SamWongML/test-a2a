@@ -1,10 +1,11 @@
 """PydanticAI-based Explainer Agent for technology explanations."""
 
 from pydantic_ai import Agent
-from pydantic_ai.models.gemini import GeminiModel
+
+from shared.models import ModelFactory
 
 from .config import get_settings
-from .models import CodeSnippet, TechnologyExplanation
+from .models import TechnologyExplanation
 from .tools import Context7Tool
 
 EXPLAINER_SYSTEM_PROMPT = """You are an expert technology explainer specializing in AI/ML tools and frameworks.
@@ -34,11 +35,8 @@ class ExplainerAgent:
         self.settings = get_settings()
         self.context7 = Context7Tool(api_key=self.settings.context7_api_key)
 
-        # Create PydanticAI agent with structured output
-        model = GeminiModel(
-            self.settings.gemini_model,
-            api_key=self.settings.google_api_key,
-        )
+        # Create PydanticAI agent with provider-agnostic model
+        model = ModelFactory.create_pydantic_ai_model(self.settings)
 
         self.agent = Agent(
             model,
@@ -100,7 +98,7 @@ Provide a detailed explanation with code examples."""
             output += f"\n## Pros\n{chr(10).join(f'- {p}' for p in result.pros)}\n"
 
         if result.cons:
-            output += f"\n## Cons\n{chr(10).join(f'- c' for c in result.cons)}\n"
+            output += f"\n## Cons\n{chr(10).join('- c' for c in result.cons)}\n"
 
         return output
 
