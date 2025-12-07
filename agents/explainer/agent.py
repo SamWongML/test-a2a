@@ -40,7 +40,7 @@ class ExplainerAgent:
 
         self.agent = Agent(
             model,
-            result_type=TechnologyExplanation,
+            output_type=TechnologyExplanation,
             system_prompt=EXPLAINER_SYSTEM_PROMPT,
         )
 
@@ -69,7 +69,7 @@ Provide a detailed explanation with code examples."""
 
         # Run the PydanticAI agent
         result = await self.agent.run(full_query)
-        return result.data
+        return result.output
 
     async def quick_explain(self, query: str) -> str:
         """Generate a quick, text-only explanation."""

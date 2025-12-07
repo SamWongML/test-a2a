@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     model_provider: ModelProvider = ModelProvider.GEMINI
 
     # Gemini settings
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_model: str = "gemini-3-pro-preview"
 
     # Azure OpenAI settings (uses Entra ID auth)
     azure_openai_endpoint: str = ""

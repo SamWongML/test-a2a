@@ -72,12 +72,13 @@ class ModelFactory:
         from shared.config import ModelProvider
 
         if settings.model_provider == ModelProvider.GEMINI:
+            import os
+
             from pydantic_ai.models.gemini import GeminiModel
 
-            return GeminiModel(
-                settings.gemini_model,
-                api_key=settings.google_api_key,
-            )
+            # Set the API key in env var as pydantic-ai expects
+            os.environ["GEMINI_API_KEY"] = settings.google_api_key
+            return GeminiModel(settings.gemini_model)
 
         elif settings.model_provider == ModelProvider.AZURE_OPENAI:
             from openai import AzureOpenAI
@@ -135,11 +136,16 @@ class ModelFactory:
         from shared.config import ModelProvider
 
         if settings.model_provider == ModelProvider.GEMINI:
-            from langchain_google_genai import ChatGoogleGenerativeAI
+            import os
 
-            return ChatGoogleGenerativeAI(
-                model=settings.gemini_model,
-                google_api_key=settings.google_api_key,
+            from crewai import LLM
+
+            # Set API key in env var for CrewAI/LiteLLM
+            os.environ["GEMINI_API_KEY"] = settings.google_api_key
+            # CrewAI expects LiteLLM format: gemini/model-name
+            return LLM(
+                model=f"gemini/{settings.gemini_model}",
+                temperature=0.7,
             )
 
         elif settings.model_provider == ModelProvider.AZURE_OPENAI:

@@ -19,7 +19,7 @@ cp .env.example .env
 # Edit .env with your API keys
 
 # Start all services
-docker-compose up --build
+docker compose up --build
 
 # Test the system
 curl -X POST http://localhost:8000/a2a \

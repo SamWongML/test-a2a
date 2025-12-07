@@ -1,10 +1,15 @@
 FROM python:3.11-slim
 
+# Install curl for health checks
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# Install dependencies
-COPY agents/research/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Copy project files for dependency installation
+COPY agents/research/pyproject.toml ./agents/research/
 
 # Copy shared utilities
 COPY shared/ ./shared/
@@ -12,9 +17,13 @@ COPY shared/ ./shared/
 # Copy agent code
 COPY agents/research/ ./agents/research/
 
+# Install dependencies using uv sync
+RUN cd agents/research && uv sync --frozen --no-dev
+
 # Set environment variables
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
+ENV PATH="/app/agents/research/.venv/bin:$PATH"
 
 # Expose port
 EXPOSE 8001
