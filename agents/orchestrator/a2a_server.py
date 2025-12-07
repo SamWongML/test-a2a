@@ -6,8 +6,8 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from .agent import OrchestratorAgent
 from .config import get_settings
+from .orchestrator import OrchestratorAgent
 
 sys.path.insert(0, "/app")
 from shared.a2a_utils import create_a2a_error, create_a2a_response, create_agent_card

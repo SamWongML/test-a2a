@@ -2,12 +2,14 @@
 
 import os
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import google.generativeai as genai
 import lancedb
 from lancedb.pydantic import LanceModel, Vector
 from pydantic import Field
+
+if TYPE_CHECKING:
+    from shared.config import Settings
 
 
 class KnowledgeEntry(LanceModel):
@@ -19,17 +21,25 @@ class KnowledgeEntry(LanceModel):
     source_agent: str = Field(description="Agent that produced this")
     created_at: str = Field(description="Timestamp")
     topics: str = Field(default="", description="Comma-separated topics")
-    vector: Vector(768) = Field(description="Embedding vector")  # Gemini embedding size
+    vector: Vector(3072) = Field(
+        description="Embedding vector"
+    )  # Azure text-embedding-3-large size
 
 
 class KnowledgeBase:
     """Vector database for storing and retrieving knowledge."""
 
-    def __init__(self, db_path: str, api_key: str):
+    def __init__(self, db_path: str, settings: "Settings"):
         self.db_path = db_path
+        self.settings = settings
         os.makedirs(os.path.dirname(db_path) if os.path.dirname(db_path) else ".", exist_ok=True)
 
-        genai.configure(api_key=api_key)
+        # Initialize Azure OpenAI client for embeddings
+        from shared.models import ModelFactory
+
+        self.embedding_client = ModelFactory.create_embedding_client(settings)
+        self.embedding_model = settings.azure_openai_embedding_deployment
+
         self.db = lancedb.connect(db_path)
 
         # Create or get table
@@ -109,10 +119,9 @@ class KnowledgeBase:
         return None
 
     async def _get_embedding(self, text: str) -> list[float]:
-        """Generate embedding using Gemini."""
-        result = genai.embed_content(
-            model="models/text-embedding-004",
-            content=text,
-            task_type="retrieval_document",
+        """Generate embedding using Azure OpenAI text-embedding-3-large."""
+        response = self.embedding_client.embeddings.create(
+            model=self.embedding_model,
+            input=text,
         )
-        return result["embedding"]
+        return response.data[0].embedding

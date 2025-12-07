@@ -2,7 +2,8 @@
 
 from pydantic import BaseModel
 
-from shared.config import ModelProvider, Settings
+from shared.config import Settings
+from shared.models import ModelFactory
 
 
 class AgentResponse(BaseModel):
@@ -40,24 +41,11 @@ Provide a comprehensive answer:"""
 
 
 class ResponseSynthesizer:
-    """Synthesizes responses from multiple agents."""
+    """Synthesizes responses from multiple agents using Azure OpenAI."""
 
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.provider = settings.model_provider
-        self._init_model()
-
-    def _init_model(self) -> None:
-        """Initialize the LLM based on provider."""
-        if self.provider == ModelProvider.GEMINI:
-            import google.generativeai as genai
-
-            genai.configure(api_key=self.settings.google_api_key)
-            self.model = genai.GenerativeModel(self.settings.gemini_model)
-        elif self.provider == ModelProvider.AZURE_OPENAI:
-            from shared.models import ModelFactory
-
-            self.model = ModelFactory.create_genai_model(self.settings)
+        self.model = ModelFactory.create_genai_model(settings)
 
     async def synthesize(
         self,
@@ -88,25 +76,12 @@ class ResponseSynthesizer:
             agent_responses=formatted_responses,
         )
 
-        if self.provider == ModelProvider.GEMINI:
-            import google.generativeai as genai
-
-            response = self.model.generate_content(
-                prompt,
-                generation_config=genai.GenerationConfig(temperature=0.3),
-            )
-            answer = response.text
-
-        elif self.provider == ModelProvider.AZURE_OPENAI:
-            response = self.model.chat.completions.create(
-                model=self.settings.azure_openai_deployment,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-            )
-            answer = response.choices[0].message.content
-
-        else:
-            raise ValueError(f"Unsupported provider: {self.provider}")
+        response = self.model.chat.completions.create(
+            model=self.settings.azure_openai_deployment,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+        )
+        answer = response.choices[0].message.content
 
         return SynthesizedResponse(
             answer=answer,

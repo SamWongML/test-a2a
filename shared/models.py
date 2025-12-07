@@ -1,8 +1,7 @@
-"""Model factory for multi-provider LLM support.
+"""Model factory for Azure OpenAI LLM support.
 
 Provides factory methods to create LLM instances for different frameworks
-(PydanticAI, Agno, CrewAI, raw google.generativeai) with support for
-Gemini and Azure OpenAI providers.
+(PydanticAI, Agno, CrewAI, OpenAI client) using Azure OpenAI with Entra ID auth.
 """
 
 from __future__ import annotations
@@ -14,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class ModelFactory:
-    """Factory for creating LLM instances across different providers."""
+    """Factory for creating Azure OpenAI LLM instances."""
 
     @staticmethod
     def _get_azure_credential(settings: Settings) -> Any:
@@ -37,144 +36,90 @@ class ModelFactory:
 
     @staticmethod
     def create_genai_model(settings: Settings) -> Any:
-        """Create model for google.generativeai (used by orchestrator).
+        """Create Azure OpenAI client for chat completions.
 
-        For Gemini: returns google.generativeai.GenerativeModel
-        For Azure: returns openai.AzureOpenAI client (different API!)
+        Returns an openai.AzureOpenAI client configured with Entra ID auth.
         """
-        from shared.config import ModelProvider
+        from openai import AzureOpenAI
 
-        if settings.model_provider == ModelProvider.GEMINI:
-            import google.generativeai as genai
-
-            genai.configure(api_key=settings.google_api_key)
-            return genai.GenerativeModel(settings.gemini_model)
-
-        elif settings.model_provider == ModelProvider.AZURE_OPENAI:
-            from openai import AzureOpenAI
-
-            token_provider = ModelFactory._get_azure_token_provider(settings)
-            return AzureOpenAI(
-                azure_endpoint=settings.azure_openai_endpoint,
-                azure_ad_token_provider=token_provider,
-                api_version=settings.azure_openai_api_version,
-            )
-
-        raise ValueError(f"Unsupported provider: {settings.model_provider}")
+        token_provider = ModelFactory._get_azure_token_provider(settings)
+        return AzureOpenAI(
+            azure_endpoint=settings.azure_openai_endpoint,
+            azure_ad_token_provider=token_provider,
+            api_version=settings.azure_openai_api_version,
+        )
 
     @staticmethod
     def create_pydantic_ai_model(settings: Settings) -> Any:
         """Create model for PydanticAI (used by explainer agent).
 
-        For Gemini: returns pydantic_ai.models.gemini.GeminiModel
-        For Azure: returns pydantic_ai.models.openai.OpenAIModel with Azure config
+        Returns pydantic_ai.models.openai.OpenAIModel with Azure config.
         """
-        from shared.config import ModelProvider
+        from openai import AzureOpenAI
+        from pydantic_ai.models.openai import OpenAIModel
 
-        if settings.model_provider == ModelProvider.GEMINI:
-            import os
-
-            from pydantic_ai.models.gemini import GeminiModel
-
-            # Set the API key in env var as pydantic-ai expects
-            os.environ["GEMINI_API_KEY"] = settings.google_api_key
-            return GeminiModel(settings.gemini_model)
-
-        elif settings.model_provider == ModelProvider.AZURE_OPENAI:
-            from openai import AzureOpenAI
-            from pydantic_ai.models.openai import OpenAIModel
-
-            # Create Azure OpenAI client with Entra ID auth
-            azure_client = AzureOpenAI(
-                azure_endpoint=settings.azure_openai_endpoint,
-                azure_ad_token_provider=ModelFactory._get_azure_token_provider(settings),
-                api_version=settings.azure_openai_api_version,
-            )
-            return OpenAIModel(
-                settings.azure_openai_deployment,
-                openai_client=azure_client,
-            )
-
-        raise ValueError(f"Unsupported provider: {settings.model_provider}")
+        azure_client = AzureOpenAI(
+            azure_endpoint=settings.azure_openai_endpoint,
+            azure_ad_token_provider=ModelFactory._get_azure_token_provider(settings),
+            api_version=settings.azure_openai_api_version,
+        )
+        return OpenAIModel(
+            settings.azure_openai_deployment,
+            openai_client=azure_client,
+        )
 
     @staticmethod
     def create_agno_model(settings: Settings) -> Any:
         """Create model for Agno (used by knowledge agent).
 
-        For Gemini: returns agno.models.google.Gemini
-        For Azure: returns agno.models.azure.AzureOpenAI
+        Returns agno.models.azure.AzureOpenAI.
         """
-        from shared.config import ModelProvider
+        from agno.models.azure import AzureOpenAI
 
-        if settings.model_provider == ModelProvider.GEMINI:
-            from agno.models.google import Gemini
-
-            return Gemini(
-                id=settings.gemini_model,
-                api_key=settings.google_api_key,
-            )
-
-        elif settings.model_provider == ModelProvider.AZURE_OPENAI:
-            from agno.models.azure import AzureOpenAI
-
-            return AzureOpenAI(
-                id=settings.azure_openai_deployment,
-                azure_endpoint=settings.azure_openai_endpoint,
-                azure_ad_token_provider=ModelFactory._get_azure_token_provider(settings),
-                api_version=settings.azure_openai_api_version,
-            )
-
-        raise ValueError(f"Unsupported provider: {settings.model_provider}")
+        return AzureOpenAI(
+            id=settings.azure_openai_deployment,
+            azure_endpoint=settings.azure_openai_endpoint,
+            azure_ad_token_provider=ModelFactory._get_azure_token_provider(settings),
+            api_version=settings.azure_openai_api_version,
+        )
 
     @staticmethod
     def create_crewai_llm(settings: Settings) -> Any:
         """Create LLM for CrewAI (used by research agent).
 
-        For Gemini: returns langchain_google_genai.ChatGoogleGenerativeAI
-        For Azure: returns langchain_openai.AzureChatOpenAI
+        Returns langchain_openai.AzureChatOpenAI.
         """
-        from shared.config import ModelProvider
+        from langchain_openai import AzureChatOpenAI
 
-        if settings.model_provider == ModelProvider.GEMINI:
-            import os
+        token_provider = ModelFactory._get_azure_token_provider(settings)
+        return AzureChatOpenAI(
+            azure_deployment=settings.azure_openai_deployment,
+            azure_endpoint=settings.azure_openai_endpoint,
+            azure_ad_token_provider=token_provider,
+            api_version=settings.azure_openai_api_version,
+        )
 
-            from crewai import LLM
+    @staticmethod
+    def create_embedding_client(settings: Settings) -> Any:
+        """Create Azure OpenAI client for embeddings.
 
-            # Set API key in env var for CrewAI/LiteLLM
-            os.environ["GEMINI_API_KEY"] = settings.google_api_key
-            # CrewAI expects LiteLLM format: gemini/model-name
-            return LLM(
-                model=f"gemini/{settings.gemini_model}",
-                temperature=0.7,
-            )
+        Returns an openai.AzureOpenAI client configured for embedding operations.
+        """
+        from openai import AzureOpenAI
 
-        elif settings.model_provider == ModelProvider.AZURE_OPENAI:
-            from langchain_openai import AzureChatOpenAI
-
-            token_provider = ModelFactory._get_azure_token_provider(settings)
-            return AzureChatOpenAI(
-                azure_deployment=settings.azure_openai_deployment,
-                azure_endpoint=settings.azure_openai_endpoint,
-                azure_ad_token_provider=token_provider,
-                api_version=settings.azure_openai_api_version,
-            )
-
-        raise ValueError(f"Unsupported provider: {settings.model_provider}")
+        token_provider = ModelFactory._get_azure_token_provider(settings)
+        return AzureOpenAI(
+            azure_endpoint=settings.azure_openai_endpoint,
+            azure_ad_token_provider=token_provider,
+            api_version=settings.azure_openai_api_version,
+        )
 
     @staticmethod
     def get_provider_info(settings: Settings) -> dict[str, str]:
         """Get human-readable info about the configured provider."""
-        from shared.config import ModelProvider
-
-        if settings.model_provider == ModelProvider.GEMINI:
-            return {
-                "provider": "Google Gemini",
-                "model": settings.gemini_model,
-            }
-        elif settings.model_provider == ModelProvider.AZURE_OPENAI:
-            return {
-                "provider": "Azure OpenAI",
-                "model": settings.azure_openai_deployment,
-                "endpoint": settings.azure_openai_endpoint,
-            }
-        return {"provider": "Unknown"}
+        return {
+            "provider": "Azure OpenAI",
+            "model": settings.azure_openai_deployment,
+            "endpoint": settings.azure_openai_endpoint,
+            "embedding_model": settings.azure_openai_embedding_deployment,
+        }

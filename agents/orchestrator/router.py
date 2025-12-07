@@ -5,7 +5,8 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from shared.config import ModelProvider, Settings
+from shared.config import Settings
+from shared.models import ModelFactory
 
 
 class AgentType(str, Enum):
@@ -59,52 +60,23 @@ JSON Response:"""
 
 
 class QueryRouter:
-    """Routes queries to appropriate agents using LLM."""
+    """Routes queries to appropriate agents using Azure OpenAI."""
 
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.provider = settings.model_provider
-        self._init_model()
-
-    def _init_model(self) -> None:
-        """Initialize the LLM based on provider."""
-        if self.provider == ModelProvider.GEMINI:
-            import google.generativeai as genai
-
-            genai.configure(api_key=self.settings.google_api_key)
-            self.model = genai.GenerativeModel(self.settings.gemini_model)
-        elif self.provider == ModelProvider.AZURE_OPENAI:
-            from shared.models import ModelFactory
-
-            self.model = ModelFactory.create_genai_model(self.settings)
+        self.model = ModelFactory.create_genai_model(settings)
 
     async def route(self, query: str) -> RoutingDecision:
         """Determine which agents should handle the query."""
         prompt = ROUTING_PROMPT.format(query=query)
 
-        if self.provider == ModelProvider.GEMINI:
-            import google.generativeai as genai
-
-            response = self.model.generate_content(
-                prompt,
-                generation_config=genai.GenerationConfig(
-                    response_mime_type="application/json",
-                    temperature=0.1,
-                ),
-            )
-            result = json.loads(response.text)
-
-        elif self.provider == ModelProvider.AZURE_OPENAI:
-            response = self.model.chat.completions.create(
-                model=self.settings.azure_openai_deployment,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-                response_format={"type": "json_object"},
-            )
-            result = json.loads(response.choices[0].message.content)
-
-        else:
-            raise ValueError(f"Unsupported provider: {self.provider}")
+        response = self.model.chat.completions.create(
+            model=self.settings.azure_openai_deployment,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            response_format={"type": "json_object"},
+        )
+        result = json.loads(response.choices[0].message.content)
 
         # Convert agent strings to enums
         agents = [AgentType(a.lower()) for a in result.get("agents", ["research"])]

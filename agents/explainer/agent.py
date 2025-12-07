@@ -119,6 +119,7 @@ Provide a detailed explanation with code examples."""
             "openai",
             "anthropic",
             "gemini",
+            "azure",
             "pytorch",
             "tensorflow",
             "huggingface",

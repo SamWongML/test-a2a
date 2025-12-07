@@ -35,16 +35,16 @@ class KnowledgeAgent:
     def __init__(self):
         self.settings = get_settings()
 
-        # Initialize knowledge base
+        # Initialize knowledge base with Azure OpenAI embeddings
         self.kb = KnowledgeBase(
             db_path=self.settings.vector_db_path,
-            api_key=self.settings.google_api_key,
+            settings=self.settings,
         )
 
         # Initialize session memory
         self.memory = SessionMemory()
 
-        # Create Agno agent with provider-agnostic model
+        # Create Agno agent with Azure OpenAI model
         model = ModelFactory.create_agno_model(self.settings)
         self.agent = Agent(
             model=model,
@@ -166,7 +166,6 @@ class KnowledgeAgent:
             "pydantic",
             "agno",
             "openai",
-            "gemini",
             "anthropic",
             "llm",
             "agent",
@@ -185,6 +184,8 @@ class KnowledgeAgent:
             "flask",
             "docker",
             "kubernetes",
+            "azure",
+            "google",
         ]
 
         text_lower = text.lower()
