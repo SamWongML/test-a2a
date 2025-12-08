@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Use environment variable for API URL (Docker: http://orchestrator:8000, Local: http://localhost:8000)
+const apiTarget = process.env.VITE_API_URL || 'http://localhost:8000'
+
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -8,12 +11,12 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: apiTarget,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
       '/stream': {
-        target: 'http://localhost:8000',
+        target: apiTarget,
         changeOrigin: true
       }
     }
