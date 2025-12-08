@@ -11,9 +11,14 @@ from .config import get_settings
 
 sys.path.insert(0, "/app")
 from shared.a2a_utils import create_a2a_error, create_a2a_response, create_agent_card
+from shared.token_manager import TokenManager
 
 app = FastAPI(title="Knowledge Manager Agent", version="1.0.0")
 settings = get_settings()
+
+# Initialize TokenManager before agent creation
+TokenManager.initialize(settings)
+
 agent = KnowledgeAgent()
 
 

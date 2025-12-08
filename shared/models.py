@@ -2,6 +2,7 @@
 
 Provides factory methods to create LLM instances for different frameworks
 (PydanticAI, Agno, CrewAI, OpenAI client) using Azure OpenAI with Entra ID auth.
+All token management is handled by the centralized TokenManager.
 """
 
 from __future__ import annotations
@@ -13,26 +14,19 @@ if TYPE_CHECKING:
 
 
 class ModelFactory:
-    """Factory for creating Azure OpenAI LLM instances."""
+    """Factory for creating Azure OpenAI LLM instances.
+
+    All instances use the centralized TokenManager for authentication.
+    Ensure TokenManager.initialize(settings) is called before using any
+    factory methods.
+    """
 
     @staticmethod
-    def _get_azure_credential(settings: Settings) -> Any:
-        """Get Azure credential using Entra ID (service principal)."""
-        from azure.identity import ClientSecretCredential
+    def _get_token_manager():
+        """Get the TokenManager singleton instance."""
+        from shared.token_manager import TokenManager
 
-        return ClientSecretCredential(
-            tenant_id=settings.azure_tenant_id,
-            client_id=settings.azure_client_id,
-            client_secret=settings.azure_client_secret,
-        )
-
-    @staticmethod
-    def _get_azure_token_provider(settings: Settings) -> Any:
-        """Get Azure token provider function for OpenAI client."""
-        from azure.identity import get_bearer_token_provider
-
-        credential = ModelFactory._get_azure_credential(settings)
-        return get_bearer_token_provider(credential, "https://cognitiveservices.azure.com/.default")
+        return TokenManager.get_instance()
 
     @staticmethod
     def create_genai_model(settings: Settings) -> Any:
@@ -42,7 +36,7 @@ class ModelFactory:
         """
         from openai import AzureOpenAI
 
-        token_provider = ModelFactory._get_azure_token_provider(settings)
+        token_provider = ModelFactory._get_token_manager().get_token_provider()
         return AzureOpenAI(
             azure_endpoint=settings.azure_openai_endpoint,
             azure_ad_token_provider=token_provider,
@@ -58,9 +52,10 @@ class ModelFactory:
         from openai import AzureOpenAI
         from pydantic_ai.models.openai import OpenAIModel
 
+        token_provider = ModelFactory._get_token_manager().get_token_provider()
         azure_client = AzureOpenAI(
             azure_endpoint=settings.azure_openai_endpoint,
-            azure_ad_token_provider=ModelFactory._get_azure_token_provider(settings),
+            azure_ad_token_provider=token_provider,
             api_version=settings.azure_openai_api_version,
         )
         return OpenAIModel(
@@ -76,10 +71,11 @@ class ModelFactory:
         """
         from agno.models.azure import AzureOpenAI
 
+        token_provider = ModelFactory._get_token_manager().get_token_provider()
         return AzureOpenAI(
             id=settings.azure_openai_deployment,
             azure_endpoint=settings.azure_openai_endpoint,
-            azure_ad_token_provider=ModelFactory._get_azure_token_provider(settings),
+            azure_ad_token_provider=token_provider,
             api_version=settings.azure_openai_api_version,
         )
 
@@ -87,16 +83,17 @@ class ModelFactory:
     def create_crewai_llm(settings: Settings) -> Any:
         """Create LLM for CrewAI (used by research agent).
 
-        Returns langchain_openai.AzureChatOpenAI.
+        Uses CrewAI's native LLM class with Azure OpenAI configuration.
+        Sets AZURE_AD_TOKEN environment variable for authentication.
         """
-        from langchain_openai import AzureChatOpenAI
+        from crewai import LLM
 
-        token_provider = ModelFactory._get_azure_token_provider(settings)
-        return AzureChatOpenAI(
-            azure_deployment=settings.azure_openai_deployment,
-            azure_endpoint=settings.azure_openai_endpoint,
-            azure_ad_token_provider=token_provider,
-            api_version=settings.azure_openai_api_version,
+        # Set environment variables for CrewAI's Azure provider
+        ModelFactory._get_token_manager().set_environment_token()
+
+        # Use CrewAI's native LLM with Azure
+        return LLM(
+            model=f"azure/{settings.azure_openai_deployment}",
         )
 
     @staticmethod
@@ -107,7 +104,7 @@ class ModelFactory:
         """
         from openai import AzureOpenAI
 
-        token_provider = ModelFactory._get_azure_token_provider(settings)
+        token_provider = ModelFactory._get_token_manager().get_token_provider()
         return AzureOpenAI(
             azure_endpoint=settings.azure_openai_endpoint,
             azure_ad_token_provider=token_provider,
