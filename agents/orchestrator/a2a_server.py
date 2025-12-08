@@ -4,10 +4,12 @@ import sys
 
 import uvicorn
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from .config import get_settings
 from .orchestrator import OrchestratorAgent
+from .streaming import StreamingOrchestrator
 
 sys.path.insert(0, "/app")
 from shared.a2a_utils import create_a2a_error, create_a2a_response, create_agent_card
@@ -20,11 +22,21 @@ logger = setup_logging("orchestrator-agent", level="INFO")
 
 app = FastAPI(title="Orchestrator Agent", version="1.0.0")
 
+# Add CORS for frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Initialize TokenManager before agent creation
 TokenManager.initialize(settings)
 
 logger.info("Initializing Orchestrator Agent...")
 agent = OrchestratorAgent()
+streaming_orchestrator = StreamingOrchestrator()
 logger.info("Orchestrator Agent initialized successfully")
 
 
@@ -124,6 +136,40 @@ async def handle_a2a_request(request: Request):
         error_msg = f"Internal error: {str(e)}"
         logger.error(f"Request {request_id}: {error_msg}", exc_info=True)
         return JSONResponse(create_a2a_error(-32603, error_msg, request_id))
+
+
+@app.post("/stream")
+async def stream_a2a_request(request: Request):
+    """Stream A2A responses via Server-Sent Events (SSE)."""
+    try:
+        body = await request.json()
+        query = ""
+
+        # Support both direct query and A2A format
+        if "query" in body:
+            query = body["query"]
+        elif "params" in body:
+            message = body.get("params", {}).get("message", {})
+            parts = message.get("parts", [])
+            query = parts[0].get("text", "") if parts else ""
+
+        if not query:
+            return JSONResponse({"error": "Missing query"}, status_code=400)
+
+        logger.info(f"Starting SSE stream for query: {query[:100]}...")
+
+        return StreamingResponse(
+            streaming_orchestrator.stream(query),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+        )
+    except Exception as e:
+        logger.error(f"Stream error: {e}", exc_info=True)
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 def main():
