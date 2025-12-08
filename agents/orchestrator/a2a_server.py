@@ -11,15 +11,21 @@ from .orchestrator import OrchestratorAgent
 
 sys.path.insert(0, "/app")
 from shared.a2a_utils import create_a2a_error, create_a2a_response, create_agent_card
+from shared.logging_config import setup_logging
 from shared.token_manager import TokenManager
 
-app = FastAPI(title="Orchestrator Agent", version="1.0.0")
+# Set up logging first
 settings = get_settings()
+logger = setup_logging("orchestrator-agent", level="INFO")
+
+app = FastAPI(title="Orchestrator Agent", version="1.0.0")
 
 # Initialize TokenManager before agent creation
 TokenManager.initialize(settings)
 
+logger.info("Initializing Orchestrator Agent...")
 agent = OrchestratorAgent()
+logger.info("Orchestrator Agent initialized successfully")
 
 
 @app.get("/.well-known/agent.json")
@@ -54,11 +60,14 @@ async def health_check():
 @app.post("/a2a")
 async def handle_a2a_request(request: Request):
     """Handle A2A JSON-RPC requests."""
+    body = None
     try:
         body = await request.json()
         method = body.get("method", "")
         params = body.get("params", {})
         request_id = body.get("id", "1")
+
+        logger.info(f"Received A2A request: method={method}, id={request_id}")
 
         if method == "tasks/send":
             # Extract the message text
@@ -67,12 +76,20 @@ async def handle_a2a_request(request: Request):
             query = parts[0].get("text", "") if parts else ""
 
             if not query:
+                logger.warning(f"Request {request_id}: Missing query text in params")
                 return JSONResponse(
                     create_a2a_error(-32602, "Invalid params: missing query text", request_id)
                 )
 
+            logger.info(f"Processing query: {query[:100]}...")
+
             # Run the orchestrator workflow
+            logger.debug("Running orchestrator workflow...")
             result = await agent.run(query)
+
+            logger.info(
+                f"Request {request_id}: Completed successfully, used agents: {result.agents_used}"
+            )
 
             return JSONResponse(
                 create_a2a_response(
@@ -93,21 +110,25 @@ async def handle_a2a_request(request: Request):
         elif method == "tasks/get":
             # Return task status (simplified)
             task_id = params.get("id", "")
+            logger.debug(f"Request {request_id}: Getting task status for {task_id}")
             return JSONResponse(
                 create_a2a_response({"status": "completed", "task_id": task_id}, request_id)
             )
 
         else:
+            logger.warning(f"Request {request_id}: Unknown method '{method}'")
             return JSONResponse(create_a2a_error(-32601, f"Method not found: {method}", request_id))
 
     except Exception as e:
-        return JSONResponse(
-            create_a2a_error(-32603, f"Internal error: {str(e)}", body.get("id", "1"))
-        )
+        request_id = body.get("id", "1") if body else "1"
+        error_msg = f"Internal error: {str(e)}"
+        logger.error(f"Request {request_id}: {error_msg}", exc_info=True)
+        return JSONResponse(create_a2a_error(-32603, error_msg, request_id))
 
 
 def main():
     """Run the A2A server."""
+    logger.info(f"Starting Orchestrator Agent on {settings.host}:{settings.port}")
     uvicorn.run(
         "agents.orchestrator.a2a_server:app",
         host=settings.host,

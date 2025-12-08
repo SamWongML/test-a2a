@@ -1,5 +1,7 @@
 """PydanticAI-based Explainer Agent for technology explanations."""
 
+import logging
+
 from pydantic_ai import Agent
 
 from shared.models import ModelFactory
@@ -8,7 +10,11 @@ from .config import get_settings
 from .models import TechnologyExplanation
 from .tools import Context7Tool
 
-EXPLAINER_SYSTEM_PROMPT = """You are an expert technology explainer specializing in AI/ML tools and frameworks.
+# Set up module logger
+logger = logging.getLogger("explainer-agent")
+
+EXPLAINER_SYSTEM_PROMPT = """You are an expert technology explainer \
+specializing in AI/ML tools and frameworks.
 
 Your task is to provide clear, detailed explanations of technologies with practical code examples.
 
@@ -33,9 +39,12 @@ class ExplainerAgent:
 
     def __init__(self):
         self.settings = get_settings()
+
+        logger.info("Initializing ExplainerAgent...")
         self.context7 = Context7Tool(api_key=self.settings.context7_api_key)
 
         # Create PydanticAI agent with provider-agnostic model
+        logger.info("Creating PydanticAI model...")
         model = ModelFactory.create_pydantic_ai_model(self.settings)
 
         self.agent = Agent(
@@ -43,9 +52,11 @@ class ExplainerAgent:
             output_type=TechnologyExplanation,
             system_prompt=EXPLAINER_SYSTEM_PROMPT,
         )
+        logger.info("ExplainerAgent initialization complete")
 
     async def explain(self, query: str, context: str = "") -> TechnologyExplanation:
         """Generate a detailed explanation for a technology."""
+        logger.info(f"Generating explanation for query: {query[:100]}...")
 
         # Try to get documentation from Context7
         doc_context = ""
@@ -53,6 +64,7 @@ class ExplainerAgent:
         # Extract technology name from query
         tech_name = self._extract_tech_name(query)
         if tech_name:
+            logger.debug(f"Fetching documentation for technology: {tech_name}")
             doc_context = await self.context7.get_documentation(tech_name)
             examples = await self.context7.search_examples(tech_name, "getting started")
             if examples:
@@ -68,15 +80,23 @@ class ExplainerAgent:
 Provide a detailed explanation with code examples."""
 
         # Run the PydanticAI agent
-        result = await self.agent.run(full_query)
-        return result.output
+        try:
+            logger.debug("Running PydanticAI agent...")
+            result = await self.agent.run(full_query)
+            logger.info("Explanation generated successfully")
+            return result.output
+        except Exception as e:
+            logger.error(f"Failed to generate explanation: {str(e)}", exc_info=True)
+            raise
 
     async def quick_explain(self, query: str) -> str:
         """Generate a quick, text-only explanation."""
-        result = await self.explain(query)
+        logger.info(f"Quick explain for query: {query[:100]}...")
+        try:
+            result = await self.explain(query)
 
-        # Format as readable text
-        output = f"""# {result.name}
+            # Format as readable text
+            output = f"""# {result.name}
 
 ## Summary
 {result.summary}
@@ -88,19 +108,24 @@ Provide a detailed explanation with code examples."""
 {chr(10).join(f"- {uc}" for uc in result.use_cases)}
 """
 
-        if result.code_snippets:
-            output += "\n## Code Examples\n"
-            for snippet in result.code_snippets:
-                output += f"\n### {snippet.description}\n"
-                output += f"```{snippet.language}\n{snippet.code}\n```\n"
+            if result.code_snippets:
+                output += "\n## Code Examples\n"
+                for snippet in result.code_snippets:
+                    output += f"\n### {snippet.description}\n"
+                    output += f"```{snippet.language}\n{snippet.code}\n```\n"
 
-        if result.pros:
-            output += f"\n## Pros\n{chr(10).join(f'- {p}' for p in result.pros)}\n"
+            if result.pros:
+                output += f"\n## Pros\n{chr(10).join(f'- {p}' for p in result.pros)}\n"
 
-        if result.cons:
-            output += f"\n## Cons\n{chr(10).join('- c' for c in result.cons)}\n"
+            if result.cons:
+                output += f"\n## Cons\n{chr(10).join('- c' for c in result.cons)}\n"
 
-        return output
+            logger.info("Quick explanation completed successfully")
+            return output
+        except Exception as e:
+            error_msg = f"Quick explanation failed: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            return error_msg
 
     def _extract_tech_name(self, query: str) -> str | None:
         """Extract technology name from query."""

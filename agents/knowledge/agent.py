@@ -1,5 +1,7 @@
 """Agno-based Knowledge Manager Agent."""
 
+import logging
+
 from agno.agent import Agent
 
 from shared.models import ModelFactory
@@ -7,6 +9,9 @@ from shared.models import ModelFactory
 from .config import get_settings
 from .knowledge_base import KnowledgeBase
 from .memory import SessionMemory
+
+# Set up module logger
+logger = logging.getLogger("knowledge-agent")
 
 KNOWLEDGE_SYSTEM_PROMPT = """You are a Knowledge Manager for a multi-agent AI system.
 
@@ -35,7 +40,10 @@ class KnowledgeAgent:
     def __init__(self):
         self.settings = get_settings()
 
+        logger.info("Initializing KnowledgeAgent...")
+
         # Initialize knowledge base with Azure OpenAI embeddings
+        logger.debug("Setting up knowledge base...")
         self.kb = KnowledgeBase(
             db_path=self.settings.vector_db_path,
             settings=self.settings,
@@ -45,6 +53,7 @@ class KnowledgeAgent:
         self.memory = SessionMemory()
 
         # Create Agno agent with Azure OpenAI model
+        logger.info("Creating Agno model...")
         model = ModelFactory.create_agno_model(self.settings)
         self.agent = Agent(
             model=model,
@@ -52,9 +61,11 @@ class KnowledgeAgent:
             instructions=KNOWLEDGE_SYSTEM_PROMPT,
             markdown=True,
         )
+        logger.info("KnowledgeAgent initialization complete")
 
     async def process(self, query: str, session_id: str = "default") -> str:
         """Process a knowledge request."""
+        logger.info(f"Processing knowledge request: {query[:100]}...")
 
         # Add to session memory
         self.memory.add_message(session_id, "user", query)
@@ -63,16 +74,20 @@ class KnowledgeAgent:
         query_lower = query.lower()
 
         if query_lower.startswith("store"):
+            logger.debug("Handling store request")
             result = await self._handle_store(query)
         elif query_lower.startswith("search") or query_lower.startswith("find"):
+            logger.debug("Handling search request")
             result = await self._handle_search(query)
         else:
             # Default: search for relevant information
+            logger.debug("Handling default search request")
             result = await self._handle_search(query)
 
         # Add response to session memory
         self.memory.add_message(session_id, "assistant", result)
 
+        logger.info("Knowledge request processed successfully")
         return result
 
     async def _handle_store(self, query: str) -> str:
@@ -109,9 +124,11 @@ class KnowledgeAgent:
                 topics=topics,
             )
 
-            return f"✅ Stored knowledge entry: {entry_id}\nTopics: {', '.join(topics) if topics else 'general'}"
+            topics_str = ", ".join(topics) if topics else "general"
+            return f"✅ Stored knowledge entry: {entry_id}\nTopics: {topics_str}"
 
         except Exception as e:
+            logger.error(f"Failed to store knowledge: {str(e)}", exc_info=True)
             return f"❌ Failed to store: {str(e)}"
 
     async def _handle_search(self, query: str) -> str:
@@ -144,15 +161,19 @@ class KnowledgeAgent:
 
             for i, r in enumerate(results, 1):
                 similarity_pct = r.get("similarity", 0) * 100
+                source_agent = r.get("source_agent", "unknown")
+                query_text = r.get("query", "")[:100]
+                content_text = r.get("content", "")[:500]
                 output_parts.append(
-                    f"**{i}. From {r.get('source_agent', 'unknown')}** (Relevance: {similarity_pct:.0f}%)\n"
-                    f"Query: {r.get('query', '')[:100]}\n"
-                    f"Content: {r.get('content', '')[:500]}...\n"
+                    f"**{i}. From {source_agent}** (Relevance: {similarity_pct:.0f}%)\n"
+                    f"Query: {query_text}\n"
+                    f"Content: {content_text}...\n"
                 )
 
             return "\n---\n".join(output_parts)
 
         except Exception as e:
+            logger.error(f"Search failed: {str(e)}", exc_info=True)
             return f"Search error: {str(e)}"
 
     def _extract_topics(self, text: str) -> list[str]:

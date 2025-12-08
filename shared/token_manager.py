@@ -7,6 +7,7 @@ all agents in the multi-agent system. Automatically refreshes tokens
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 import time
@@ -18,6 +19,9 @@ if TYPE_CHECKING:
     from azure.core.credentials import AccessToken
 
     from shared.config import Settings
+
+# Set up module logger
+logger = logging.getLogger("token-manager")
 
 # Refresh token 10 minutes before expiration
 TOKEN_REFRESH_BUFFER_SECONDS = 600
@@ -73,12 +77,14 @@ class TokenManager:
         self._token_lock = threading.Lock()
         self._credential = None
         self._initialized = True
+        logger.info("TokenManager initialized")
 
     def _get_credential(self):
         """Lazily initialize Azure credential."""
         if self._credential is None:
             from azure.identity import ClientSecretCredential
 
+            logger.debug("Creating Azure ClientSecretCredential")
             self._credential = ClientSecretCredential(
                 tenant_id=self._settings.azure_tenant_id,
                 client_id=self._settings.azure_client_id,
@@ -94,8 +100,15 @@ class TokenManager:
 
     def _refresh_token(self) -> AccessToken:
         """Get a fresh token from Azure AD."""
-        credential = self._get_credential()
-        return credential.get_token("https://cognitiveservices.azure.com/.default")
+        logger.info("Refreshing Azure AD token...")
+        try:
+            credential = self._get_credential()
+            token = credential.get_token("https://cognitiveservices.azure.com/.default")
+            logger.info("Successfully acquired Azure AD token")
+            return token
+        except Exception as e:
+            logger.error(f"Failed to refresh Azure AD token: {str(e)}", exc_info=True)
+            raise
 
     def get_token(self) -> str:
         """Get a valid Azure AD token, refreshing if necessary.

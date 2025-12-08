@@ -1,5 +1,7 @@
 """CrewAI-based Research Agent for AI project discovery."""
 
+import logging
+
 from crewai import Agent, Crew, Process, Task
 
 from shared.models import ModelFactory
@@ -9,12 +11,17 @@ from .tools import FirecrawlSearchTool, GitHubSearchTool
 from .tools.firecrawl import FirecrawlScrapeTool
 from .tools.github import GitHubRepoDetailsTool
 
+# Set up module logger
+logger = logging.getLogger("research-agent")
+
 
 class ResearchAgent:
     """Research agent using CrewAI for AI project discovery."""
 
     def __init__(self):
         self.settings = get_settings()
+
+        logger.info("Initializing ResearchAgent tools...")
 
         # Initialize tools
         self.firecrawl_search = FirecrawlSearchTool(api_key=self.settings.firecrawl_api_key)
@@ -23,10 +30,13 @@ class ResearchAgent:
         self.github_details = GitHubRepoDetailsTool(token=self.settings.github_token)
 
         # Create provider-agnostic LLM for CrewAI
+        logger.info("Creating CrewAI LLM...")
         self.llm = ModelFactory.create_crewai_llm(self.settings)
 
         # Create the crew
+        logger.info("Creating research crew...")
         self.crew = self._create_crew()
+        logger.info("ResearchAgent initialization complete")
 
     def _create_crew(self) -> Crew:
         """Create the research crew with specialized agents."""
@@ -74,6 +84,7 @@ class ResearchAgent:
 
     async def research(self, query: str) -> str:
         """Execute research on the given query."""
+        logger.info(f"Starting research for query: {query[:100]}...")
 
         # Define tasks
         web_research_task = Task(
@@ -118,11 +129,26 @@ class ResearchAgent:
         )
 
         # Execute the crew
-        result = self.crew.kickoff(tasks=[web_research_task, github_research_task, synthesis_task])
-
-        return str(result)
+        try:
+            logger.info("Executing crew research workflow...")
+            result = self.crew.kickoff(
+                tasks=[web_research_task, github_research_task, synthesis_task]
+            )
+            logger.info("Research completed successfully")
+            return str(result)
+        except Exception as e:
+            error_msg = f"Research failed: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            return error_msg
 
     async def quick_search(self, query: str) -> str:
         """Execute a quick GitHub-only search."""
-        result = self.github_search._run(query)
-        return result
+        logger.info(f"Starting quick search for query: {query[:100]}...")
+        try:
+            result = self.github_search._run(query)
+            logger.info("Quick search completed successfully")
+            return result
+        except Exception as e:
+            error_msg = f"Quick search failed: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            return error_msg
