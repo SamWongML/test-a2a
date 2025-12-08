@@ -47,20 +47,21 @@ class ModelFactory:
     def create_pydantic_ai_model(settings: Settings) -> Any:
         """Create model for PydanticAI (used by explainer agent).
 
-        Returns pydantic_ai.models.openai.OpenAIModel with Azure config.
+        Returns pydantic_ai.models.openai.OpenAIChatModel with Azure config.
         """
-        from openai import AzureOpenAI
-        from pydantic_ai.models.openai import OpenAIModel
+        from openai import AsyncAzureOpenAI
+        from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.providers.openai import OpenAIProvider
 
         token_provider = ModelFactory._get_token_manager().get_token_provider()
-        azure_client = AzureOpenAI(
+        azure_client = AsyncAzureOpenAI(
             azure_endpoint=settings.azure_openai_endpoint,
             azure_ad_token_provider=token_provider,
             api_version=settings.azure_openai_api_version,
         )
-        return OpenAIModel(
+        return OpenAIChatModel(
             settings.azure_openai_deployment,
-            openai_client=azure_client,
+            provider=OpenAIProvider(openai_client=azure_client),
         )
 
     @staticmethod
