@@ -131,11 +131,11 @@ class TokenManager:
         """Set Azure token environment variables for libraries that need them.
 
         Sets the following environment variables:
-        - AZURE_AD_TOKEN: For CrewAI and LiteLLM
+        - AZURE_API_KEY: For CrewAI and LiteLLM (uses Azure AD token as API key)
         - AZURE_API_BASE: Azure OpenAI endpoint
         - AZURE_API_VERSION: API version
         """
-        os.environ["AZURE_AD_TOKEN"] = self.get_token()
+        os.environ["AZURE_API_KEY"] = self.get_token()
         os.environ["AZURE_API_BASE"] = self._settings.azure_openai_endpoint
         os.environ["AZURE_API_VERSION"] = self._settings.azure_openai_api_version
 
