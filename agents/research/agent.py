@@ -5,7 +5,6 @@ import logging
 from crewai import Agent, Crew, Process, Task
 
 from shared.models import ModelFactory
-from shared.token_manager import TokenManager
 
 from .config import get_settings
 from .tools import FirecrawlSearchTool, GitHubSearchTool
@@ -33,15 +32,10 @@ class ResearchAgent:
         # Create provider-agnostic LLM for CrewAI
         logger.info("Creating CrewAI LLM...")
         self.llm = ModelFactory.create_crewai_llm(self.settings)
-
-        # Create the crew
-        logger.info("Creating research crew...")
-        self.crew = self._create_crew()
         logger.info("ResearchAgent initialization complete")
 
-    def _create_crew(self) -> Crew:
-        """Create the research crew with specialized agents."""
-
+    def _create_research_crew(self, query: str) -> Crew:
+        """Create a crew with tasks for a specific research query."""
         # Web Research Agent
         web_researcher = Agent(
             role="AI Web Researcher",
@@ -77,16 +71,6 @@ class ResearchAgent:
             llm=self.llm,
         )
 
-        return Crew(
-            agents=[web_researcher, github_researcher, synthesizer],
-            process=Process.sequential,
-            verbose=True,
-        )
-
-    async def research(self, query: str) -> str:
-        """Execute research on the given query."""
-        logger.info(f"Starting research for query: {query[:100]}...")
-
         # Define tasks
         web_research_task = Task(
             description=f"""Search the web for information about: {query}
@@ -98,7 +82,7 @@ class ResearchAgent:
             
             Use the firecrawl_search tool to find relevant content.""",
             expected_output="A summary of web research findings with sources",
-            agent=self.crew.agents[0],  # web_researcher
+            agent=web_researcher,
         )
 
         github_research_task = Task(
@@ -111,7 +95,7 @@ class ResearchAgent:
             
             Use the github_search tool and get details for top projects.""",
             expected_output="A list of relevant GitHub repositories with descriptions and metrics",
-            agent=self.crew.agents[1],  # github_researcher
+            agent=github_researcher,
         )
 
         synthesis_task = Task(
@@ -125,20 +109,27 @@ class ResearchAgent:
             
             Format the output clearly with headers and bullet points.""",
             expected_output="A comprehensive research report",
-            agent=self.crew.agents[2],  # synthesizer
+            agent=synthesizer,
             context=[web_research_task, github_research_task],
         )
 
+        return Crew(
+            agents=[web_researcher, github_researcher, synthesizer],
+            tasks=[web_research_task, github_research_task, synthesis_task],
+            process=Process.sequential,
+            verbose=True,
+        )
+
+    async def research(self, query: str) -> str:
+        """Execute research on the given query."""
+        logger.info(f"Starting research for query: {query[:100]}...")
+
         # Execute the crew
         try:
-            # Refresh token before each call to ensure it's not expired
-            logger.info("Refreshing Azure AD token before crew execution...")
-            TokenManager.get_instance().set_environment_token()
-
             logger.info("Executing crew research workflow...")
-            result = self.crew.kickoff(
-                tasks=[web_research_task, github_research_task, synthesis_task]
-            )
+            # Create a new crew with tasks for this specific query
+            crew = self._create_research_crew(query)
+            result = crew.kickoff()
             logger.info("Research completed successfully")
             return str(result)
         except Exception as e:
@@ -150,9 +141,6 @@ class ResearchAgent:
         """Execute a quick GitHub-only search."""
         logger.info(f"Starting quick search for query: {query[:100]}...")
         try:
-            # Refresh token before each call to ensure it's not expired
-            TokenManager.get_instance().set_environment_token()
-
             result = self.github_search._run(query)
             logger.info("Quick search completed successfully")
             return result
