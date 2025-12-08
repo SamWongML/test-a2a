@@ -107,7 +107,31 @@ class TokenManager:
             logger.info("Successfully acquired Azure AD token")
             return token
         except Exception as e:
-            logger.error(f"Failed to refresh Azure AD token: {str(e)}", exc_info=True)
+            error_str = str(e).lower()
+            # Provide more specific error guidance
+            if "connection" in error_str or "timeout" in error_str or "resolve" in error_str:
+                logger.error(
+                    f"Network error acquiring Azure AD token. "
+                    f"If in corporate network, ensure HTTP_PROXY and HTTPS_PROXY are set. "
+                    f"Error: {str(e)}",
+                    exc_info=True,
+                )
+            elif "403" in error_str or "forbidden" in error_str:
+                logger.error(
+                    f"Azure AD returned 403 Forbidden. "
+                    f"Check if the service principal has correct permissions for Azure OpenAI. "
+                    f"Error: {str(e)}",
+                    exc_info=True,
+                )
+            elif "401" in error_str or "unauthorized" in error_str:
+                logger.error(
+                    f"Azure AD authentication failed. "
+                    f"Verify AZURE_TENANT_ID, AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET. "
+                    f"Error: {str(e)}",
+                    exc_info=True,
+                )
+            else:
+                logger.error(f"Failed to refresh Azure AD token: {str(e)}", exc_info=True)
             raise
 
     def get_token(self) -> str:

@@ -9,6 +9,10 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # Proxy settings for corporate network
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1,research,explainer,knowledge,orchestrator}
       # Azure OpenAI settings (with Entra ID auth)
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
       - AZURE_OPENAI_DEPLOYMENT=${ORCHESTRATOR_AZURE_DEPLOYMENT:-gpt-4o}
@@ -46,6 +50,10 @@ services:
     ports:
       - "8001:8001"
     environment:
+      # Proxy settings for corporate network
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1,research,explainer,knowledge,orchestrator}
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
       - AZURE_OPENAI_DEPLOYMENT=${RESEARCH_AZURE_DEPLOYMENT:-gpt-4o}
       - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-2024-02-15-preview}
@@ -76,6 +84,10 @@ services:
     ports:
       - "8002:8002"
     environment:
+      # Proxy settings for corporate network
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1,research,explainer,knowledge,orchestrator}
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
       - AZURE_OPENAI_DEPLOYMENT=${EXPLAINER_AZURE_DEPLOYMENT:-gpt-4o}
       - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-2024-02-15-preview}
@@ -105,6 +117,10 @@ services:
     ports:
       - "8003:8003"
     environment:
+      # Proxy settings for corporate network
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1,research,explainer,knowledge,orchestrator}
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
       - AZURE_OPENAI_DEPLOYMENT=${KNOWLEDGE_AZURE_DEPLOYMENT:-gpt-4o}
       - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-2024-02-15-preview}

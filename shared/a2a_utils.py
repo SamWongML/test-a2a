@@ -84,13 +84,44 @@ class A2AClient:
             "id": task_id or "1",
         }
 
-        response = await self._client.post(
-            f"{self.base_url}/a2a",
-            json=payload,
-            headers={"Content-Type": "application/json"},
-        )
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = await self._client.post(
+                f"{self.base_url}/a2a",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            # The target agent returned an error status code
+            error_detail = ""
+            try:
+                error_body = e.response.json()
+                if "error" in error_body:
+                    error_detail = f" - {error_body['error'].get('message', '')}"
+            except Exception:
+                error_detail = f" - {e.response.text[:200]}" if e.response.text else ""
+
+            if e.response.status_code == 403:
+                raise httpx.HTTPStatusError(
+                    f"Agent at {self.base_url} returned 403 Forbidden. "
+                    f"This usually means Azure OpenAI rejected the request "
+                    f"(check service principal permissions or token validity){error_detail}",
+                    request=e.request,
+                    response=e.response,
+                ) from e
+            raise
+        except httpx.ConnectError as e:
+            raise httpx.ConnectError(
+                f"Failed to connect to agent at {self.base_url}. "
+                f"Check if the agent is running and network connectivity. "
+                f"In corporate networks, ensure proxy settings are configured."
+            ) from e
+        except httpx.TimeoutException as e:
+            raise httpx.TimeoutException(
+                f"Timeout connecting to agent at {self.base_url}. "
+                f"The agent may be overloaded or network is slow."
+            ) from e
 
     async def close(self):
         """Close the HTTP client."""
