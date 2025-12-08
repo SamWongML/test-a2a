@@ -5,6 +5,7 @@ import logging
 from crewai import Agent, Crew, Process, Task
 
 from shared.models import ModelFactory
+from shared.token_manager import TokenManager
 
 from .config import get_settings
 from .tools import FirecrawlSearchTool, GitHubSearchTool
@@ -130,6 +131,10 @@ class ResearchAgent:
 
         # Execute the crew
         try:
+            # Refresh token before each call to ensure it's not expired
+            logger.info("Refreshing Azure AD token before crew execution...")
+            TokenManager.get_instance().set_environment_token()
+
             logger.info("Executing crew research workflow...")
             result = self.crew.kickoff(
                 tasks=[web_research_task, github_research_task, synthesis_task]
@@ -145,6 +150,9 @@ class ResearchAgent:
         """Execute a quick GitHub-only search."""
         logger.info(f"Starting quick search for query: {query[:100]}...")
         try:
+            # Refresh token before each call to ensure it's not expired
+            TokenManager.get_instance().set_environment_token()
+
             result = self.github_search._run(query)
             logger.info("Quick search completed successfully")
             return result
