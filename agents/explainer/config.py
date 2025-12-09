@@ -14,6 +14,7 @@ class ExplainerSettings(Settings):
     port: int = 8002
     agent_name: str = "explainer-agent"
     agent_description: str = "Explains technologies with detailed code snippets"
+    azure_openai_deployment: str = "gpt-4o"
 
     # Explainer-specific settings
     context7_api_key: str

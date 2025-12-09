@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { Sparkles } from 'lucide-react'
 import QueryInput from './components/QueryInput'
+import AgentWorkflowGraph from './components/AgentWorkflowGraph'
 import AgentGrid from './components/AgentGrid'
 import ToolCallsSection from './components/ToolCallsSection'
 import MessageFlow from './components/MessageFlow'
@@ -15,6 +16,7 @@ export default function App() {
     toolCalls, 
     messages, 
     response, 
+    activeConnections,
     startStream, 
     resetStream 
   } = useEventStream()
@@ -51,6 +53,8 @@ export default function App() {
           isLoading={isStreaming}
         />
       </section>
+
+      <AgentWorkflowGraph agents={agents} activeConnections={activeConnections} />
 
       <section className="agents-section">
         <AgentGrid agents={agents} />

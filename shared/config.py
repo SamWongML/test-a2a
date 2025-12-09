@@ -37,38 +37,6 @@ class Settings(BaseSettings):
     }
 
 
-class OrchestratorSettings(Settings):
-    """Settings for the Orchestrator agent."""
-
-    port: int = 8000
-    azure_openai_deployment: str = "gpt-4o"
-
-
-class ResearchSettings(Settings):
-    """Settings for the Research agent."""
-
-    port: int = 8001
-    azure_openai_deployment: str = "gpt-4o"
-    firecrawl_api_key: str
-    github_token: str = ""
-
-
-class ExplainerSettings(Settings):
-    """Settings for the Explainer agent."""
-
-    port: int = 8002
-    azure_openai_deployment: str = "gpt-4o"
-    context7_api_key: str
-
-
-class KnowledgeSettings(Settings):
-    """Settings for the Knowledge Manager agent."""
-
-    port: int = 8003
-    azure_openai_deployment: str = "gpt-4o"
-    vector_db_path: str = "./data/knowledge.lance"
-
-
 @lru_cache
 def get_settings() -> Settings:
     """Get cached base settings."""

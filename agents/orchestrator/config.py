@@ -14,6 +14,7 @@ class OrchestratorSettings(Settings):
     port: int = 8000
     agent_name: str = "orchestrator-agent"
     agent_description: str = "Main orchestrator for multi-agent AI system"
+    azure_openai_deployment: str = "gpt-4o"
 
 
 @lru_cache

@@ -429,21 +429,18 @@ pre {
 }
 
 .submit-button.loading {
-  position: relative;
+  min-width: 120px;
+  pointer-events: none;
 }
 
-.submit-button.loading::after {
-  content: "";
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  border: 2px solid transparent;
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+.submit-button .spinner {
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
   to {
     transform: rotate(360deg);
   }
@@ -727,6 +724,71 @@ pre {
   .submit-button {
     width: 100%;
   }
+}
+
+/* ===================================
+   Agent Workflow Graph
+   =================================== */
+
+.workflow-graph-container {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-md) 0;
+}
+
+.workflow-graph-svg {
+  width: 100%;
+  max-width: 800px;
+  height: auto;
+  min-height: 180px;
+}
+
+/* Connection lines */
+.workflow-connections line {
+  transition: all var(--transition-fast);
+}
+
+.connection-active {
+  filter: drop-shadow(0 0 3px currentColor);
+}
+
+.flow-dot {
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+/* Agent nodes */
+.workflow-node {
+  cursor: pointer;
+}
+
+.workflow-node:hover .node-pill {
+  stroke-width: 1.5 !important;
+  filter: brightness(1.1);
+}
+
+.node-pill {
+  transition: all var(--transition-normal);
+}
+
+/* Breathing glow animation */
+.node-glow-rect {
+  animation: pillGlow 2s ease-in-out infinite;
+}
+
+@keyframes pillGlow {
+  0%, 100% {
+    opacity: 0.3;
+    stroke-width: 1.5;
+  }
+  50% {
+    opacity: 0.5;
+    stroke-width: 2.5;
+  }
+}
+
+/* Active state */
+.workflow-node.active .node-pill {
+  stroke-width: 1.5;
 }
 
 /* ===================================

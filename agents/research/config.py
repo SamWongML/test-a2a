@@ -14,6 +14,7 @@ class ResearchSettings(Settings):
     port: int = 8001
     agent_name: str = "research-agent"
     agent_description: str = "Researches AI projects with Firecrawl and GitHub MCP"
+    azure_openai_deployment: str = "gpt-4o"
 
     # Research-specific settings
     firecrawl_api_key: str

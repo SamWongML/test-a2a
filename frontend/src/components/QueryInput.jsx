@@ -25,7 +25,10 @@ export default function QueryInput({ value, onChange, onSubmit, isLoading }) {
         disabled={isLoading || !value.trim()}
       >
         {isLoading ? (
-          <Loader2 size={20} className="animate-spin" />
+          <>
+            <Loader2 size={18} className="spinner" />
+            Processing...
+          </>
         ) : (
           <>
             <Send size={18} />

@@ -14,6 +14,7 @@ class KnowledgeSettings(Settings):
     port: int = 8003
     agent_name: str = "knowledge-agent"
     agent_description: str = "Persistent memory and RAG for the multi-agent system"
+    azure_openai_deployment: str = "gpt-4o"
 
     # Knowledge-specific settings
     vector_db_path: str = "./data/knowledge.lance"

@@ -3,10 +3,15 @@ import { Sparkles, Clock, Users, Database } from 'lucide-react'
 export default function ResponsePanel({ response, agents }) {
   if (!response) return null
 
-  const { content, sources, duration } = response
+  const { content, sources, duration, agents_used } = response
 
-  // Calculate agents used
-  const agentsUsed = agents?.filter(a => a.status === 'complete').map(a => a.name) || []
+  // Get agents used from response first, or calculate from agent states
+  const agentsUsed = agents_used || 
+    agents?.filter(a => a.status === 'complete').map(a => a.name || capitalize(a.id)) || []
+
+  function capitalize(str) {
+    return str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
+  }
 
   return (
     <section className="response-section fade-in">
