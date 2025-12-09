@@ -3,9 +3,9 @@ import { useMemo } from 'react'
 // Larger horizontal layout with proper proportions
 const AGENTS = [
   { id: 'router', name: 'Router', icon: '⚡', x: 100, y: 100 },
-  { id: 'knowledge', name: 'Knowledge', icon: '📚', x: 350, y: 40 },
-  { id: 'research', name: 'Research', icon: '🔍', x: 350, y: 100 },
-  { id: 'explainer', name: 'Explainer', icon: '💡', x: 350, y: 160 },
+  { id: 'knowledge', name: 'Knowledge', icon: '🧠', x: 350, y: 40 },
+  { id: 'research', name: 'Research', icon: '🔬', x: 350, y: 100 },
+  { id: 'explainer', name: 'Explainer', icon: '📚', x: 350, y: 160 },
   { id: 'synthesizer', name: 'Synthesizer', icon: '✨', x: 600, y: 100 }
 ]
 
