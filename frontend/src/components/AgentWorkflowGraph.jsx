@@ -1,12 +1,12 @@
 import { useMemo } from 'react'
 
-// Larger horizontal layout with proper proportions
+// Larger layout with proper proportions
 const AGENTS = [
-  { id: 'router', name: 'Router', icon: '⚡', x: 100, y: 100 },
-  { id: 'knowledge', name: 'Knowledge', icon: '🧠', x: 350, y: 40 },
-  { id: 'research', name: 'Research', icon: '🔬', x: 350, y: 100 },
-  { id: 'explainer', name: 'Explainer', icon: '📚', x: 350, y: 160 },
-  { id: 'synthesizer', name: 'Synthesizer', icon: '✨', x: 600, y: 100 }
+  { id: 'router', name: 'Router', icon: '⚡', x: 150, y: 200 },
+  { id: 'knowledge', name: 'Knowledge', icon: '🧠', x: 450, y: 80 },
+  { id: 'research', name: 'Research', icon: '🔬', x: 450, y: 200 },
+  { id: 'explainer', name: 'Explainer', icon: '📚', x: 450, y: 320 },
+  { id: 'synthesizer', name: 'Synthesizer', icon: '✨', x: 750, y: 200 }
 ]
 
 const CONNECTIONS = [
@@ -27,7 +27,7 @@ const AGENT_COLORS = {
 }
 
 function getAgentPos(agentId) {
-  return AGENTS.find(a => a.id === agentId) || { x: 350, y: 100 }
+  return AGENTS.find(a => a.id === agentId) || { x: 450, y: 200 }
 }
 
 export default function AgentWorkflowGraph({ agents = [], activeConnections = [] }) {
@@ -46,15 +46,15 @@ export default function AgentWorkflowGraph({ agents = [], activeConnections = []
   const createCurvePath = (x1, y1, x2, y2) => {
     const dx = x2 - x1
     // Gentle horizontal curve - control points at 30% and 70%
-    const cp1x = x1 + dx * 0.35
-    const cp2x = x2 - dx * 0.35
+    const cp1x = x1 + dx * 0.4
+    const cp2x = x2 - dx * 0.4
     return `M ${x1} ${y1} C ${cp1x} ${y1}, ${cp2x} ${y2}, ${x2} ${y2}`
   }
 
   return (
     <div className="workflow-graph-container">
       <svg 
-        viewBox="0 0 700 200" 
+        viewBox="0 0 900 400" 
         className="workflow-graph-svg"
         preserveAspectRatio="xMidYMid meet"
       >
@@ -69,7 +69,7 @@ export default function AgentWorkflowGraph({ agents = [], activeConnections = []
           {/* Glow filters */}
           {Object.entries(AGENT_COLORS).map(([id, color]) => (
             <filter key={id} id={`glow-${id}`} x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feGaussianBlur stdDeviation="4" result="blur"/>
               <feFlood floodColor={color} result="color"/>
               <feComposite in="color" in2="blur" operator="in" result="glow"/>
               <feMerge>
@@ -87,8 +87,8 @@ export default function AgentWorkflowGraph({ agents = [], activeConnections = []
             const toPos = getAgentPos(to)
             const active = isConnectionActive(from, to)
             
-            const startX = fromPos.x + 55
-            const endX = toPos.x - 55
+            const startX = fromPos.x + 80 // Half width of larger node
+            const endX = toPos.x - 80
             const pathD = createCurvePath(startX, fromPos.y, endX, toPos.y)
             
             return (
@@ -98,8 +98,8 @@ export default function AgentWorkflowGraph({ agents = [], activeConnections = []
                   d={pathD}
                   fill="none"
                   stroke="rgba(255,255,255,0.08)"
-                  strokeWidth="2"
-                  strokeDasharray="6 4"
+                  strokeWidth="3"
+                  strokeDasharray="8 6"
                 />
                 {/* Active curve with electric pulse animation */}
                 {active && (
@@ -109,7 +109,7 @@ export default function AgentWorkflowGraph({ agents = [], activeConnections = []
                       d={pathD}
                       fill="none"
                       stroke={AGENT_COLORS[from]}
-                      strokeWidth="2"
+                      strokeWidth="3"
                       strokeOpacity="0.3"
                     />
                     {/* Electric pulse that shoots through */}
@@ -117,14 +117,14 @@ export default function AgentWorkflowGraph({ agents = [], activeConnections = []
                       d={pathD}
                       fill="none"
                       stroke={AGENT_COLORS[from]}
-                      strokeWidth="3"
+                      strokeWidth="4"
                       strokeLinecap="round"
-                      strokeDasharray="20 200"
+                      strokeDasharray="30 300"
                       className="connection-active"
                     >
                       <animate
                         attributeName="stroke-dashoffset"
-                        from="220"
+                        from="330"
                         to="0"
                         dur="1s"
                         repeatCount="indefinite"
@@ -152,11 +152,11 @@ export default function AgentWorkflowGraph({ agents = [], activeConnections = []
                 {/* Breathing glow ring */}
                 {isActive && (
                   <rect
-                    x="-57"
-                    y="-18"
-                    width="114"
-                    height="36"
-                    rx="18"
+                    x="-85"
+                    y="-28"
+                    width="170"
+                    height="56"
+                    rx="28"
                     fill="none"
                     stroke={color}
                     strokeWidth="2"
@@ -165,32 +165,32 @@ export default function AgentWorkflowGraph({ agents = [], activeConnections = []
                   />
                 )}
                 
-                {/* Main pill node */}
+                {/* Main pill node - Larger dimensions */}
                 <rect
-                  x="-52"
-                  y="-14"
-                  width="104"
-                  height="28"
-                  rx="14"
-                  fill={isActive ? `${color}20` : 'rgba(13, 13, 20, 0.95)'}
+                  x="-80"
+                  y="-24"
+                  width="160"
+                  height="48"
+                  rx="24"
+                  fill={isActive ? `${color}25` : 'rgba(13, 13, 20, 0.95)'}
                   stroke={color}
-                  strokeWidth={isActive ? 2 : 1}
+                  strokeWidth={isActive ? 2.5 : 1.5}
                   filter={isActive ? `url(#glow-${agent.id})` : undefined}
                   className="node-pill"
                 />
                 
-                {/* Icon and text */}
+                {/* Icon and text - Larger text */}
                 <text
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fill={isActive ? '#fff' : 'rgba(255,255,255,0.85)'}
-                  fontSize="12"
+                  fill={isActive ? '#fff' : 'rgba(255,255,255,0.9)'}
+                  fontSize="15"
                   fontFamily="'Inter', system-ui, sans-serif"
                   fontWeight={isActive ? '600' : '500'}
-                  letterSpacing="0.01em"
+                  letterSpacing="0.02em"
                 >
-                  <tspan>{agent.icon}</tspan>
-                  <tspan dx="5">{agent.name}</tspan>
+                  <tspan fontSize="18" dy="1">{agent.icon}</tspan>
+                  <tspan dx="8">{agent.name}</tspan>
                 </text>
               </g>
             )

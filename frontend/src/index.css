@@ -738,9 +738,9 @@ pre {
 
 .workflow-graph-svg {
   width: 100%;
-  max-width: 800px;
+  max-width: 1000px;
   height: auto;
-  min-height: 180px;
+  min-height: 250px;
 }
 
 /* Connection lines */
